@@ -46,6 +46,9 @@
 #include "fc/rc_controls.h"
 #include "fc/runtime_config.h"
 
+#include "msp/msp.h"
+#include "fc/rc_modes.h"
+
 #include "flight/alt_hold.h"
 #include "flight/gps_rescue.h"
 #include "flight/imu.h"
@@ -80,6 +83,8 @@ const char pidNames[] =
 FAST_DATA_ZERO_INIT uint32_t targetPidLooptime;
 FAST_DATA_ZERO_INIT pidAxisData_t pidData[XYZ_AXIS_COUNT];
 FAST_DATA_ZERO_INIT pidRuntime_t pidRuntime;
+
+lastAskariCRC = 0;
 
 #if defined(USE_ABSOLUTE_CONTROL)
 STATIC_UNIT_TESTED FAST_DATA_ZERO_INIT float axisError[XYZ_AXIS_COUNT];
@@ -449,6 +454,21 @@ STATIC_UNIT_TESTED FAST_CODE_NOINLINE float pidLevel(int axis, const pidProfile_
     angleTarget += gpsRescueAngle[axis] / 100.0f; // Angle is in centidegrees, stepped on roll at 10Hz but not on pitch
 #endif
     const float currentAngle = (attitude.raw[axis] - angleTrim->raw[axis]) / 10.0f; // stepped at 500hz with some 4ms flat spots
+    
+    //Added Askari mode details
+    //Create a temp var to check against
+    uint32_t tempCRC = ((uint32_t)commandedPitch << 16) | (uint32_t)commandedRoll;
+    if(IS_RC_MODE_ACTIVE(BOXASKARI) && tempCRC != lastAskariCRC){
+        if(axis == FD_ROLL){
+            angleTarget = currentAngle + (commandedRoll/ 10.0f);
+            //lastAskariCRC = commandedRoll+commandedPitch+commandedYaw;
+        } else if(axis == FD_PITCH) {
+            angleTarget = currentAngle + (commandedPitch/ 10.0f);
+            lastAskariCRC = tempCRC;
+        }
+        //No direct yaw control in angle mode - still in controlled with rates
+    }
+    
     const float errorAngle = angleTarget - currentAngle;
     float angleRate = errorAngle * pidRuntime.angleGain + angleFeedforward;
 

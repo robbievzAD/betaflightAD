@@ -159,6 +159,9 @@
 
 static const char * const flightControllerIdentifier = FC_FIRMWARE_IDENTIFIER; // 4 UPPER CASE alpha numeric characters that identify the flight controller.
 
+int16_t commandedRoll = 0;
+int16_t commandedPitch = 0;
+
 enum {
     MSP_REBOOT_FIRMWARE = 0,
     MSP_REBOOT_BOOTLOADER_ROM,
@@ -2645,6 +2648,22 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
     uint8_t value;
     const unsigned int dataSize = sbufBytesRemaining(src);
     switch (cmdMSP) {
+    case MSP_SET_ATTITUDE:
+        if (dataSize == 6) {
+        commandedRoll = (int16_t)sbufReadU16(src);   //In centidegrees
+        commandedPitch = (int16_t)sbufReadU16(src);  //In centidegrees
+        //Yaw is handled as a regular RC input - no angluar call for yaw in angle mode
+        uint16_t frame[4] = {0,0,0,sbufReadU16(src)+1500}; //In centidegrees - should remain 0
+        rxMspFrameReceive(frame, 4);;
+        // Convert the received values to the appropriate range and set the attitude
+        // You may need to implement a function to handle this, e.g., setAttitude(roll, pitch, yaw);
+        //return MSP_RESULT_ACK;
+        } 
+        // else {
+        //     return MSP_RESULT_ERROR;
+        // }
+        break;
+
     case MSP_SELECT_SETTING:
         value = sbufReadU8(src);
         if ((value & RATEPROFILE_MASK) == 0) {

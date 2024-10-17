@@ -67,3 +67,6 @@ mspResult_e mspFcProcessCommand(mspDescriptor_t srcDesc, mspPacket_t *cmd, mspPa
 void mspFcProcessReply(mspPacket_t *reply);
 
 mspDescriptor_t mspDescriptorAlloc(void);
+
+extern int16_t commandedRoll;
+extern int16_t commandedPitch;

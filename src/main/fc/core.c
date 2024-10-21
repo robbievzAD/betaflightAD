@@ -981,6 +981,7 @@ void processRxModes(timeUs_t currentTimeUs)
 
         if (!FLIGHT_MODE(ANGLE_MODE)) {
             ENABLE_FLIGHT_MODE(ANGLE_MODE);
+            //Potentially add code here for Askari mode activation?
         }
     } else {
         DISABLE_FLIGHT_MODE(ANGLE_MODE); // failsafe support

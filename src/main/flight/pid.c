@@ -84,7 +84,9 @@ FAST_DATA_ZERO_INIT uint32_t targetPidLooptime;
 FAST_DATA_ZERO_INIT pidAxisData_t pidData[XYZ_AXIS_COUNT];
 FAST_DATA_ZERO_INIT pidRuntime_t pidRuntime;
 
-lastAskariCRC = 0;
+uint32_t lastAskariCRC = 0;
+float rollAngleTarget = 0;
+float pitchAngleTarget = 0;
 
 #if defined(USE_ABSOLUTE_CONTROL)
 STATIC_UNIT_TESTED FAST_DATA_ZERO_INIT float axisError[XYZ_AXIS_COUNT];
@@ -458,13 +460,21 @@ STATIC_UNIT_TESTED FAST_CODE_NOINLINE float pidLevel(int axis, const pidProfile_
     //Added Askari mode details
     //Create a temp var to check against
     uint32_t tempCRC = ((uint32_t)commandedPitch << 16) | (uint32_t)commandedRoll;
-    if(IS_RC_MODE_ACTIVE(BOXASKARI) && tempCRC != lastAskariCRC){
+    //If we are in Askari mode then execute the following
+    if(IS_RC_MODE_ACTIVE(BOXASKARI)){
+        //If the MSP attitude command is new/different then import and use it
         if(axis == FD_ROLL){
-            angleTarget = currentAngle + (commandedRoll/ 10.0f);
-            //lastAskariCRC = commandedRoll+commandedPitch+commandedYaw;
+            if(tempCRC != lastAskariCRC){
+                rollAngleTarget = currentAngle + (commandedRoll/ 10.0f);
+            }
+            angleTarget = rollAngleTarget;
+        //lastAskariCRC = commandedRoll+commandedPitch+commandedYaw;
         } else if(axis == FD_PITCH) {
-            angleTarget = currentAngle + (commandedPitch/ 10.0f);
-            lastAskariCRC = tempCRC;
+            if(tempCRC != lastAskariCRC){
+                pitchAngleTarget = currentAngle + (commandedPitch/ 10.0f);
+                lastAskariCRC = tempCRC;
+            }
+            angleTarget = pitchAngleTarget;
         }
         //No direct yaw control in angle mode - still in controlled with rates
     }

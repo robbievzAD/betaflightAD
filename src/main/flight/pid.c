@@ -458,10 +458,10 @@ STATIC_UNIT_TESTED FAST_CODE_NOINLINE float pidLevel(int axis, const pidProfile_
     const float currentAngle = (attitude.raw[axis] - angleTrim->raw[axis]) / 10.0f; // stepped at 500hz with some 4ms flat spots
     
     //Added Askari mode details
-    //Create a temp var to check against
-    uint32_t tempCRC = ((uint32_t)commandedPitch << 16) | (uint32_t)commandedRoll;
     //If we are in Askari mode then execute the following
     if(IS_RC_MODE_ACTIVE(BOXASKARI)){
+        //Create a temp var to check against
+        uint32_t tempCRC = ((uint32_t)commandedPitch << 16) | (uint32_t)commandedRoll;
         //If the MSP attitude command is new/different then import and use it
         if(axis == FD_ROLL){
             if(tempCRC != lastAskariCRC){

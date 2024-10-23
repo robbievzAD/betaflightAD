@@ -2652,18 +2652,27 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
     //Added Askari mode for commanding attitude
     case MSP_SET_ATTITUDE:
         if (dataSize == 6) {
-        commandedRoll = (int16_t)sbufReadU16(src);   //In centidegrees
-        commandedPitch = (int16_t)sbufReadU16(src);  //In centidegrees
-        //Yaw is handled as a regular RC input - no angluar call for yaw in angle mode
-        uint16_t frame[4] = {0,0,0,sbufReadU16(src)+1500}; //In centidegrees - should remain 0
-        rxMspFrameReceive(frame, 4);
-        // Convert the received values to the appropriate range and set the attitude
-        // You may need to implement a function to handle this, e.g., setAttitude(roll, pitch, yaw);
-        //return MSP_RESULT_ACK;
+            commandedRoll = (int16_t)sbufReadU16(src);   //In centidegrees
+            commandedPitch = (int16_t)sbufReadU16(src);  //In centidegrees
+            //Yaw is handled as a regular RC input - no angluar call for yaw in angle mode
+            uint16_t frame[MAX_SUPPORTED_RC_CHANNEL_COUNT];
+            frame[0] = (uint16_t)commandedRoll;
+            frame[1] = (uint16_t)commandedPitch;
+            frame[2] = (uint16_t)1500;
+            frame[3] = (uint16_t)1250;
+            rxMspFrameReceive(frame, 4);
         } 
-        // else {
-        //     return MSP_RESULT_ERROR;
-        // }
+        else {
+            //For debugging purposes
+            commandedRoll = -1;
+            commandedPitch = -1;
+            uint16_t frame[MAX_SUPPORTED_RC_CHANNEL_COUNT];
+            frame[0] = (uint16_t)1250;
+            frame[1] = (uint16_t)1500;
+            frame[2] = (uint16_t)1750;
+            frame[3] = (uint16_t)1500;
+            rxMspFrameReceive(frame, 4);
+        }
         break;
 
     case MSP_SELECT_SETTING:
@@ -2705,6 +2714,19 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
 
     case MSP_SET_RAW_RC:
 #ifdef USE_RX_MSP
+        // {
+        //     uint8_t channelCount = dataSize / sizeof(uint16_t);
+        //     if (channelCount > MAX_SUPPORTED_RC_CHANNEL_COUNT) {
+        //         return MSP_RESULT_ERROR;
+        //     } else {
+        //         uint16_t frame[MAX_SUPPORTED_RC_CHANNEL_COUNT];
+        //         for (int i = 0; i < channelCount; i++) {
+        //             frame[i] = sbufReadU16(src);
+        //         }
+        //         rxMspFrameReceive(frame, channelCount);
+        //     }
+        // }
+
         {
             uint8_t channelCount = dataSize / sizeof(uint16_t);
             if (channelCount > MAX_SUPPORTED_RC_CHANNEL_COUNT) {
@@ -2715,6 +2737,8 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
                     frame[i] = sbufReadU16(src);
                 }
                 rxMspFrameReceive(frame, channelCount);
+                commandedRoll = (int16_t)frame[0];
+                commandedPitch = (int16_t)frame[1];
             }
         }
 #endif
